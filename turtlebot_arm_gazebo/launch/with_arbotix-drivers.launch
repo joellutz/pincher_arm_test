@@ -1,0 +1,49 @@
+<!-- Template from: https://github.com/MatthewVerbryke/inmoov_ros -->
+
+<launch>
+
+  <!-- these are the arguments you can pass this launch file, for example paused:=true -->
+  <arg name="paused" default="false"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="gui" default="true"/>
+  <arg name="headless" default="false"/>
+  <arg name="debug" default="false"/>
+  <arg name="arm_type" default="$(optenv TURTLEBOT_ARM1 turtlebot)"/>
+  <arg name="simulation" default="true"/> <!-- when set to false, arbotix drivers try to open /dev/ttyUSB0 connection -->
+  
+
+  <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find turtlebot_arm_gazebo)/worlds/turtlebot_arm.world"/>
+    <arg name="debug" value="$(arg debug)"/>
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="paused" value="$(arg paused)"/>
+    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+    <arg name="headless" value="$(arg headless)"/>
+  </include>
+
+  <!-- Run a python script to the send a service call to gazebo_ros to spawn a URDF robot -->
+  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+    args="-urdf -model $(arg arm_type) -param robot_description"/>
+
+  <!-- launch files -->
+  <!-- <include file="$(find turtlebot_arm_control)/launch/turtlebot_arm_control.launch"/> -->
+
+
+  <!-- nodes from the arm bringup file (see turtlebot_arm_bringup/launch/arm.launch): -->
+  <!-- Load the URDF into the ROS Parameter Server -->
+  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find turtlebot_arm_description)/urdf/$(arg arm_type)_arm.urdf.xacro'"/>
+  <node name="robot_state_pub" pkg="robot_state_publisher" type="robot_state_publisher"/>
+
+  <node name="fake_joint_pub" pkg="turtlebot_arm_bringup" type="fake_joint_pub.py"/>
+
+  <node name="arbotix" pkg="arbotix_python" type="arbotix_driver" output="screen">
+    <rosparam file="$(find turtlebot_arm_bringup)/config/$(arg arm_type)_arm.yaml" command="load"/>
+    <param name="sim" value="$(arg simulation)"/>
+  </node>
+
+  <node name="gripper_controller" pkg="arbotix_controllers" type="gripper_controller" output="screen">
+    <rosparam file="$(find turtlebot_arm_bringup)/config/$(arg arm_type)_gripper.yaml" command="load" />
+  </node>
+
+</launch>
