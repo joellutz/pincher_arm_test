@@ -6,5 +6,6 @@ This is just a test for simulating the Turtlebot Arm (more exact: the PhantomX P
 It currently doesn't use the arbotix drivers (as it should be, because they are needed when moving the real robot).
 
 Currently working (more or less):
+
         roslaunch turtlebot_arm_gazebo turtlebot_arm_world.launch
         roslaunch turtlebot_arm_moveit_config demo_planning.launch
